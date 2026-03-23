@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PYRYA — Coming 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: 'Geist', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Page wrapper ── */
+    .page {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Interactive map canvas ── */
+    #map-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* ── Nav bar ── */
+    .navbar {
+      z-index: 10;
+      width: calc(100% - 107.78px); /* 53.89px each side */
+      margin: 0 53.89px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      position: relative;
+    }
+
+    /* True 0.5px border using transform scale — avoids DPR rounding */
+    .navbar::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.9);
+      transform: scaleY(0.5);
+      transform-origin: bottom;
+    }
+
+    /* ── Logo ── */
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      line-height: 0;
+    }
+
+    .logo img {
+      width: 213.621px;
+      height: 47.466px;
+      display: block;
+      object-fit: contain;
+    }
+
+    /* ── Badge group ── */
+    .badges {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      border: 1.048px solid #fff;
+      border-radius: 8px;
+      padding: 6px 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .badge span {
+      font-family: 'Geist', sans-serif;
+      font-size: 20px;
+      font-weight: 400;
+      font-style: normal;
+      line-height: normal;
+      letter-spacing: -0.4px;
+      text-transform: uppercase;
+      color: #fff;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Interactive dotted world map -->
+    <canvas id="map-canvas" aria-hidden="true"></canvas>
+
+    <!-- Navigation bar -->
+    <nav class="navbar" aria-label="Site header">
+      <!-- Logo (single flat asset: icon + wordmark + ®) -->
+      <div class="logo">
+        <img
+          src="https://www.figma.com/api/mcp/asset/ce9f9d85-af08-4604-919d-ddf02ef390c3"
+          alt="PYRYA"
+        />
+      </div>
+
+      <!-- Status badges -->
+      <div class="badges" role="status" aria-label="Launching coming soon, 2026">
+        <div class="badge">
+          <span>Coming Soon</span>
+        </div>
+        <div class="badge">
+          <span>2026</span>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <script type="module">
+    import DottedMap from 'https://esm.sh/dotted-map@1';
+
+    const canvas = document.getElementById('map-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // ── Config ──────────────────────────────────────────
+    const DOT_COLOR       = '#232323';
+    const DOT_BASE_RGB    = { r: 35,  g: 35,  b: 35  }; // #232323
+    const DOT_HOVER_RGB   = { r: 136, g: 99,  b: 233 }; // #8863E9
+    const DOT_RADIUS_BASE = 3;   // radius at 1920px reference width (6px diameter)
+    const REPEL_RADIUS    = 160;   // px — how far the cursor influence reaches
+    const REPEL_FORCE     = 7;     // how strongly dots are pushed
+    const SPRING          = 0.055; // pull back to origin
+    const DAMPING         = 0.78;  // velocity decay
+    // ────────────────────────────────────────────────────
+
+    let dotRadius = DOT_RADIUS_BASE; // updated on every resize
+
+    // Generate world map points (diagonal grid, ~55 rows)
+    const dottedMap = new DottedMap({ height: 90, grid: 'diagonal' });
+    const mapPoints = dottedMap.getPoints();
+
+    let dots = [];
+    const mouse = { x: -9999, y: -9999 };
+
+    function buildDots() {
+      const W = canvas.offsetWidth;
+      const H = canvas.offsetHeight;
+
+      // Find the bounding box of all map points
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      for (const p of mapPoints) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      }
+
+      const mapW = maxX - minX;
+      const mapH = maxY - minY;
+
+      // Single uniform scale — fill width, allow vertical overflow (like cover on x-axis)
+      // This keeps the aspect ratio locked and ensures nothing is cut at the top
+      const scale = W / mapW;
+
+      // Scale dot radius proportionally to viewport width (2.5px at 1920px reference)
+      dotRadius = Math.max(1, DOT_RADIUS_BASE * (W / 1920));
+
+      // Center vertically; map may overflow canvas bottom if viewport is very tall
+      const scaledH = mapH * scale;
+      const offsetX = -minX * scale;                    // left-align to canvas left edge
+      const offsetY = (H - scaledH) / 2 - minY * scale; // center vertically
+
+      dots = mapPoints.map(p => {
+        const ox = p.x * scale + offsetX;
+        const oy = p.y * scale + offsetY;
+        return { ox, oy, x: ox, y: oy, vx: 0, vy: 0 };
+      });
+    }
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.offsetWidth;
+      const H = canvas.offsetHeight;
+      canvas.width  = W * dpr;
+      canvas.height = H * dpr;
+      ctx.scale(dpr, dpr);
+      buildDots();
+    }
+
+    function tick() {
+      const W = canvas.offsetWidth;
+      const H = canvas.offsetHeight;
+      ctx.clearRect(0, 0, W, H);
+      for (const d of dots) {
+        // Repulsion from cursor
+        const dx   = d.x - mouse.x;
+        const dy   = d.y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        let t = 0;
+        if (dist < REPEL_RADIUS && dist > 0) {
+          t = 1 - dist / REPEL_RADIUS;                  // 0→1 as cursor gets closer
+          const force = t * t * REPEL_FORCE;             // quadratic falloff
+          d.vx += (dx / dist) * force;
+          d.vy += (dy / dist) * force;
+        }
+
+        // Spring back to origin
+        d.vx += (d.ox - d.x) * SPRING;
+        d.vy += (d.oy - d.y) * SPRING;
+
+        // Damping
+        d.vx *= DAMPING;
+        d.vy *= DAMPING;
+
+        d.x += d.vx;
+        d.y += d.vy;
+
+        // Interpolate colour: base → #8863E9 with gentle falloff from cursor
+        const c = Math.pow(t, 1.5);
+        const r = Math.round(DOT_BASE_RGB.r + c * (DOT_HOVER_RGB.r - DOT_BASE_RGB.r));
+        const g = Math.round(DOT_BASE_RGB.g + c * (DOT_HOVER_RGB.g - DOT_BASE_RGB.g));
+        const b = Math.round(DOT_BASE_RGB.b + c * (DOT_HOVER_RGB.b - DOT_BASE_RGB.b));
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+
+        // Draw
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    // Track mouse over the whole page so hovering navbar also ripples the map
+    window.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+
+    window.addEventListener('mouseleave', () => {
+      mouse.x = -9999;
+      mouse.y = -9999;
+    });
+
+    window.addEventListener('resize', resize);
+    resize();
+    tick();
+  </script>
+</body>
+</html>
