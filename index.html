@@ -540,21 +540,18 @@
     window.addEventListener('mousemove', e => setMouseFromClient(e.clientX, e.clientY));
     window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
 
-    // Touch (mobile) — tap + drag both trigger repel
-    canvas.addEventListener('touchstart', e => {
-      e.preventDefault();
+    // Touch (mobile) — attach to window since canvas has pointer-events:none
+    window.addEventListener('touchstart', e => {
       const t = e.touches[0];
       setMouseFromClient(t.clientX, t.clientY);
-    }, { passive: false });
+    }, { passive: true });
 
-    canvas.addEventListener('touchmove', e => {
-      e.preventDefault();
+    window.addEventListener('touchmove', e => {
       const t = e.touches[0];
       setMouseFromClient(t.clientX, t.clientY);
-    }, { passive: false });
+    }, { passive: true });
 
-    canvas.addEventListener('touchend', () => {
-      // Fade out influence after lift — keep last position briefly then reset
+    window.addEventListener('touchend', () => {
       setTimeout(() => { mouse.x = -9999; mouse.y = -9999; }, 300);
     });
 
