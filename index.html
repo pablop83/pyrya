@@ -508,21 +508,34 @@
       requestAnimationFrame(tick);
     }
 
-    // Track mouse — disabled on touch devices to avoid accidental repel scatter
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-
-    if (!isTouchDevice) {
-      window.addEventListener('mousemove', e => {
-        const rect = canvas.getBoundingClientRect();
-        mouse.x = e.clientX - rect.left;
-        mouse.y = e.clientY - rect.top;
-      });
-
-      window.addEventListener('mouseleave', () => {
-        mouse.x = -9999;
-        mouse.y = -9999;
-      });
+    // ── Pointer tracking (mouse + touch) ──────────────────
+    function setMouseFromClient(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = clientX - rect.left;
+      mouse.y = clientY - rect.top;
     }
+
+    // Mouse (desktop)
+    window.addEventListener('mousemove', e => setMouseFromClient(e.clientX, e.clientY));
+    window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+    // Touch (mobile) — tap + drag both trigger repel
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      setMouseFromClient(t.clientX, t.clientY);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      setMouseFromClient(t.clientX, t.clientY);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      // Fade out influence after lift — keep last position briefly then reset
+      setTimeout(() => { mouse.x = -9999; mouse.y = -9999; }, 300);
+    });
 
     window.addEventListener('resize', resize);
     resize();
