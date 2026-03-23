@@ -282,6 +282,27 @@
       .mobile-layout .badges {
         opacity: 1;
         animation: none;
+        width: 100%;
+      }
+
+      /* Scale badges to always fit within the padded container */
+      .mobile-separator .badge,
+      .mobile-separator .badge-cta {
+        padding: min(8px, 2vw) min(10px, 2.5vw);
+        flex-shrink: 1;
+      }
+
+      .mobile-separator .badge span,
+      .mobile-separator .badge-cta span {
+        font-size: min(18px, 4.4vw);
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+      }
+
+      .mobile-separator .badge-cta svg {
+        width: min(16px, 4vw);
+        height: min(16px, 4vw);
+        flex-shrink: 0;
       }
     }
   </style>
