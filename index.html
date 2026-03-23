@@ -32,6 +32,7 @@
       position: relative;
       width: 100%;
       height: 100vh;
+      height: 100dvh;
       display: flex;
       align-items: center;
       overflow: hidden;
@@ -225,7 +226,7 @@
         display: none;
       }
 
-      /* Show mobile layout */
+      /* Show mobile layout — use dvh so browser chrome doesn't eat the bottom */
       .mobile-layout {
         display: flex;
         position: relative;
@@ -234,8 +235,10 @@
         justify-content: space-between;
         align-items: flex-start;
         width: 100%;
-        height: 100vh;
+        height: 100vh;            /* fallback for older browsers */
+        height: 100dvh;           /* dynamic — excludes browser chrome on Android/iOS */
         padding: 20px;
+        padding-bottom: max(20px, calc(20px + env(safe-area-inset-bottom)));
       }
 
       .mobile-logo {
@@ -505,17 +508,21 @@
       requestAnimationFrame(tick);
     }
 
-    // Track mouse over the whole page so hovering navbar also ripples the map
-    window.addEventListener('mousemove', e => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - rect.left;
-      mouse.y = e.clientY - rect.top;
-    });
+    // Track mouse — disabled on touch devices to avoid accidental repel scatter
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 
-    window.addEventListener('mouseleave', () => {
-      mouse.x = -9999;
-      mouse.y = -9999;
-    });
+    if (!isTouchDevice) {
+      window.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+      });
+
+      window.addEventListener('mouseleave', () => {
+        mouse.x = -9999;
+        mouse.y = -9999;
+      });
+    }
 
     window.addEventListener('resize', resize);
     resize();
