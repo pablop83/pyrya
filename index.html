@@ -17,6 +17,7 @@
     html, body {
       width: 100%;
       height: 100%;
+      overflow: hidden;
     }
 
     body {
@@ -33,15 +34,26 @@
       height: 100vh;
       display: flex;
       align-items: center;
+      overflow: hidden;
     }
 
     /* ── Interactive map canvas ── */
+    .map-wrapper {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
     #map-canvas {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       pointer-events: none;
+      opacity: 0;
+      animation: map-fadein 1.2s ease-in forwards;
+      animation-delay: 0.4s;
     }
 
     /* ── Nav bar ── */
@@ -56,7 +68,30 @@
       position: relative;
     }
 
-    /* True 0.5px border using transform scale — avoids DPR rounding */
+    /* Map fade-in after nav — 3D perspective tilt from bottom */
+    @keyframes map-fadein {
+      from {
+        opacity: 0;
+        transform: perspective(1200px) rotateX(18deg) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: perspective(1200px) rotateX(0deg) scale(1);
+      }
+    }
+
+    /* Nav elements slide up from 20px below */
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* True 0.5px border that animates left → right on load */
+    @keyframes border-grow {
+      from { width: 0; }
+      to   { width: 100%; }
+    }
+
     .navbar::after {
       content: '';
       position: absolute;
@@ -67,14 +102,17 @@
       background: rgba(255, 255, 255, 0.9);
       transform: scaleY(0.5);
       transform-origin: bottom;
+      animation: border-grow 1s ease-out forwards;
     }
 
     /* ── Logo ── */
     .logo {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       flex-shrink: 0;
-      line-height: 0;
+      opacity: 0;
+      animation: slide-up 0.6s ease-out forwards;
+      animation-delay: 0.1s;
     }
 
     .logo img {
@@ -84,12 +122,38 @@
       object-fit: contain;
     }
 
+    /* ── Nav left group (logo + tagline) ── */
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 56px;
+      flex-shrink: 0;
+    }
+
+    /* ── Tagline ── */
+    .tagline {
+      font-family: 'Geist', sans-serif;
+      font-weight: 300;
+      font-size: 32px;
+      font-style: normal;
+      line-height: 1;
+      letter-spacing: -1.6px;
+      color: #fff;
+      white-space: nowrap;
+      opacity: 0;
+      animation: slide-up 0.6s ease-out forwards;
+      animation-delay: 0.2s;
+    }
+
     /* ── Badge group ── */
     .badges {
       display: flex;
       align-items: center;
       gap: 4px;
       flex-shrink: 0;
+      opacity: 0;
+      animation: slide-up 0.6s ease-out forwards;
+      animation-delay: 0.3s;
     }
 
     .badge {
@@ -112,21 +176,95 @@
       color: #fff;
       white-space: nowrap;
     }
+
+    /* ── Mobile layout ── */
+    .mobile-layout {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+
+      /* Hide desktop nav */
+      .navbar {
+        display: none;
+      }
+
+      /* Show mobile layout */
+      .mobile-layout {
+        display: flex;
+        position: relative;
+        z-index: 10;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        height: 100vh;
+        padding: 20px;
+      }
+
+      .mobile-logo {
+        opacity: 0;
+        animation: slide-up 0.6s ease-out forwards;
+        animation-delay: 0.1s;
+      }
+
+      .mobile-logo img {
+        width: 213.621px;
+        height: 47.466px;
+        display: block;
+        object-fit: contain;
+      }
+
+      .mobile-bottom {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        width: 100%;
+        opacity: 0;
+        animation: slide-up 0.6s ease-out forwards;
+        animation-delay: 0.2s;
+      }
+
+      .mobile-tagline {
+        font-family: 'Geist', sans-serif;
+        font-weight: 300;
+        font-size: 48px;
+        line-height: 0.9;
+        letter-spacing: -2.4px;
+        color: #fff;
+      }
+
+      .mobile-separator {
+        border-top: 0.5px solid rgba(255, 255, 255, 0.9);
+        padding-top: 16px;
+      }
+
+      /* Reset badge animation on mobile (parent handles it) */
+      .mobile-layout .badges {
+        opacity: 1;
+        animation: none;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="page">
     <!-- Interactive dotted world map -->
-    <canvas id="map-canvas" aria-hidden="true"></canvas>
+    <div class="map-wrapper">
+      <canvas id="map-canvas" aria-hidden="true"></canvas>
+    </div>
 
     <!-- Navigation bar -->
     <nav class="navbar" aria-label="Site header">
-      <!-- Logo (single flat asset: icon + wordmark + ®) -->
-      <div class="logo">
-        <img
-          src="https://www.figma.com/api/mcp/asset/ce9f9d85-af08-4604-919d-ddf02ef390c3"
-          alt="PYRYA"
-        />
+      <!-- Left group: logo + tagline -->
+      <div class="nav-left">
+        <div class="logo">
+          <img
+            src="https://www.figma.com/api/mcp/asset/ce9f9d85-af08-4604-919d-ddf02ef390c3"
+            alt="PYRYA"
+          />
+        </div>
+        <p class="tagline">El futuro del lavado está llegando</p>
       </div>
 
       <!-- Status badges -->
@@ -139,6 +277,28 @@
         </div>
       </div>
     </nav>
+
+    <!-- Mobile layout -->
+    <div class="mobile-layout">
+      <!-- Logo top-left -->
+      <div class="mobile-logo">
+        <img
+          src="https://www.figma.com/api/mcp/asset/ce9f9d85-af08-4604-919d-ddf02ef390c3"
+          alt="PYRYA"
+        />
+      </div>
+
+      <!-- Tagline + badges at bottom -->
+      <div class="mobile-bottom">
+        <p class="mobile-tagline">El futuro del lavado está llegando</p>
+        <div class="mobile-separator">
+          <div class="badges" role="status" aria-label="Launching coming soon, 2026">
+            <div class="badge"><span>Coming Soon</span></div>
+            <div class="badge"><span>2026</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -156,9 +316,15 @@
     const REPEL_FORCE     = 7;     // how strongly dots are pushed
     const SPRING          = 0.055; // pull back to origin
     const DAMPING         = 0.78;  // velocity decay
+    const GATHER_DURATION = 2000;  // ms — how long dots take to form the map
     // ────────────────────────────────────────────────────
 
-    let dotRadius = DOT_RADIUS_BASE; // updated on every resize
+    let dotRadius     = DOT_RADIUS_BASE;
+    let animStartTime = null;   // set after first resize
+    let animDone      = false;
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
     // Generate world map points (diagonal grid, ~55 rows)
     const dottedMap = new DottedMap({ height: 90, grid: 'diagonal' });
@@ -170,6 +336,7 @@
     function buildDots() {
       const W = canvas.offsetWidth;
       const H = canvas.offsetHeight;
+      const mobile = W <= 768;
 
       // Find the bounding box of all map points
       let minX = Infinity, maxX = -Infinity;
@@ -184,22 +351,37 @@
       const mapW = maxX - minX;
       const mapH = maxY - minY;
 
-      // Single uniform scale — fill width, allow vertical overflow (like cover on x-axis)
-      // This keeps the aspect ratio locked and ensures nothing is cut at the top
-      const scale = W / mapW;
+      let scale, offsetX, offsetY;
 
-      // Scale dot radius proportionally to viewport width (2.5px at 1920px reference)
-      dotRadius = Math.max(1, DOT_RADIUS_BASE * (W / 1920));
+      if (mobile) {
+        // Zoom in 3× natively — no CSS transform, so pixels stay sharp
+        const zoomFactor = 3;
+        scale = (W / mapW) * zoomFactor;
 
-      // Center vertically; map may overflow canvas bottom if viewport is very tall
-      const scaledH = mapH * scale;
-      const offsetX = -minX * scale;                    // left-align to canvas left edge
-      const offsetY = (H - scaledH) / 2 - minY * scale; // center vertically
+        // Focus centre on Americas: ~28% from left, ~42% from top of the logical map
+        const focusX = minX + mapW * 0.28;
+        const focusY = minY + mapH * 0.42;
+        offsetX = W * 0.5 - focusX * scale;
+        offsetY = H * 0.5 - focusY * scale;
+
+        // Keep dots at a comfortable physical size on mobile
+        dotRadius = Math.max(1.5, DOT_RADIUS_BASE * (W / 390));
+      } else {
+        // Desktop: fill width, centre vertically, aspect-ratio locked
+        scale = W / mapW;
+        dotRadius = Math.max(1, DOT_RADIUS_BASE * (W / 1920));
+        const scaledH = mapH * scale;
+        offsetX = -minX * scale;
+        offsetY = (H - scaledH) / 2 - minY * scale;
+      }
 
       dots = mapPoints.map(p => {
         const ox = p.x * scale + offsetX;
         const oy = p.y * scale + offsetY;
-        return { ox, oy, x: ox, y: oy, vx: 0, vy: 0 };
+        // On first build, start from a random scatter position
+        const sx = animDone ? ox : Math.random() * W;
+        const sy = animDone ? oy : Math.random() * H;
+        return { ox, oy, sx, sy, x: sx, y: sy, vx: 0, vy: 0 };
       });
     }
 
@@ -211,14 +393,30 @@
       canvas.height = H * dpr;
       ctx.scale(dpr, dpr);
       buildDots();
+      // Kick off scatter animation once, with same delay as CSS fade-in (0.4s)
+      if (!animStartTime) animStartTime = performance.now() + 400;
     }
 
     function tick() {
-      const W = canvas.offsetWidth;
-      const H = canvas.offsetHeight;
+      const W   = canvas.offsetWidth;
+      const H   = canvas.offsetHeight;
+      const now = performance.now();
+
+      // Gather progress: 0 = fully scattered, 1 = fully formed
+      let gatherP = 1;
+      if (!animDone && animStartTime) {
+        const raw = Math.min(1, Math.max(0, (now - animStartTime) / GATHER_DURATION));
+        gatherP = easeOutCubic(raw);
+        if (raw >= 1) animDone = true;
+      }
+
       ctx.clearRect(0, 0, W, H);
       for (const d of dots) {
-        // Repulsion from cursor
+        // Current effective origin blends from scatter → map position
+        const tx = lerp(d.sx, d.ox, gatherP);
+        const ty = lerp(d.sy, d.oy, gatherP);
+
+        // Repulsion from cursor (only meaningful once mostly gathered)
         const dx   = d.x - mouse.x;
         const dy   = d.y - mouse.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -226,14 +424,15 @@
         let t = 0;
         if (dist < REPEL_RADIUS && dist > 0) {
           t = 1 - dist / REPEL_RADIUS;                  // 0→1 as cursor gets closer
-          const force = t * t * REPEL_FORCE;             // quadratic falloff
+          const force = t * t * REPEL_FORCE * gatherP;  // disabled while scattering
           d.vx += (dx / dist) * force;
           d.vy += (dy / dist) * force;
         }
 
-        // Spring back to origin
-        d.vx += (d.ox - d.x) * SPRING;
-        d.vy += (d.oy - d.y) * SPRING;
+        // Spring toward blended target (stronger pull during gather so dots keep up)
+        const springF = animDone ? SPRING : SPRING + (1 - gatherP) * 0.15;
+        d.vx += (tx - d.x) * springF;
+        d.vy += (ty - d.y) * springF;
 
         // Damping
         d.vx *= DAMPING;
